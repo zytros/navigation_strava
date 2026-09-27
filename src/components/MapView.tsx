@@ -26,6 +26,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const hoverMarkerRef = useRef<L.CircleMarker | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
+  const onMapClickRef = useRef(onMapClick);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -43,7 +48,7 @@ export const MapView: React.FC<MapViewProps> = ({
       }).addTo(map);
 
       map.on('click', (e: L.LeafletMouseEvent) => {
-        onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+        onMapClickRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
       });
 
       waypointsLayerRef.current = L.layerGroup().addTo(map);

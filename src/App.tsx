@@ -134,6 +134,19 @@ export function App() {
     await updateRouteWithWaypoints(reversedWaypoints, `${route.title} (Reverse)`);
   };
 
+  const handleReorderWaypoints = async (startIndex: number, endIndex: number) => {
+    const result = Array.from(route.waypoints);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    const labeledWaypoints = result.map((w, idx) => ({
+      ...w,
+      name: idx === 0 ? 'Start' : idx === result.length - 1 ? 'Finish' : (w.name === 'Start' || w.name === 'Finish' || w.name.startsWith('Waypoint ') ? `Waypoint ${idx + 1}` : w.name),
+    }));
+
+    await updateRouteWithWaypoints(labeledWaypoints, route.title);
+  };
+
   const handleTitleChange = (title: string) => {
     setRoute(prev => ({ ...prev, title }));
   };
@@ -187,6 +200,7 @@ export function App() {
               onTitleChange={handleTitleChange}
               onRemoveWaypoint={handleRemoveWaypoint}
               onUpdateWaypointName={handleUpdateWaypointName}
+              onReorderWaypoints={handleReorderWaypoints}
               isCalculating={isCalculating}
             />
           </>
