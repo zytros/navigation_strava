@@ -56,8 +56,44 @@ export function App() {
       latLng,
       name: `Waypoint ${route.waypoints.length + 1}`,
     };
-    const newWaypoints = [...route.waypoints, newWaypoint];
-    await updateRouteWithWaypoints(newWaypoints, route.title);
+
+    let newWaypoints: Waypoint[];
+
+    if (route.waypoints.length < 2) {
+      newWaypoints = [...route.waypoints, newWaypoint];
+    } else {
+      let bestSegmentIdx = -1;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < route.waypoints.length - 1; i++) {
+        const p1 = route.waypoints[i].latLng;
+        const p2 = route.waypoints[i + 1].latLng;
+        const segDist = distanceToSegment(latLng, p1, p2);
+        if (segDist < minDistance) {
+          minDistance = segDist;
+          bestSegmentIdx = i;
+        }
+      }
+
+      const THRESHOLD_METERS = 5000; // 5 km threshold for route proximity
+
+      if (bestSegmentIdx !== -1 && minDistance < THRESHOLD_METERS) {
+        newWaypoints = [
+          ...route.waypoints.slice(0, bestSegmentIdx + 1),
+          newWaypoint,
+          ...route.waypoints.slice(bestSegmentIdx + 1),
+        ];
+      } else {
+        newWaypoints = [...route.waypoints, newWaypoint];
+      }
+    }
+
+    const labeledWaypoints = newWaypoints.map((w, idx) => ({
+      ...w,
+      name: idx === 0 ? 'Start' : idx === newWaypoints.length - 1 ? 'Finish' : `Waypoint ${idx + 1}`,
+    }));
+
+    await updateRouteWithWaypoints(labeledWaypoints, route.title);
   };
 
   const handleRemoveWaypoint = async (id: string) => {
@@ -158,6 +194,49 @@ export function App() {
       </div>
     </div>
   );
+}
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // metres
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // in metres
+}
+
+function distanceToSegment(p: LatLng, p1: LatLng, p2: LatLng): number {
+  const A = p.lat - p1.lat;
+  const B = p.lng - p1.lng;
+  const C = p2.lat - p1.lat;
+  const D = p2.lng - p1.lng;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+  if (lenSq !== 0) {
+    param = dot / lenSq;
+  }
+
+  let xx, yy;
+  if (param < 0) {
+    xx = p1.lat;
+    yy = p1.lng;
+  } else if (param > 1) {
+    xx = p2.lat;
+    yy = p2.lng;
+  } else {
+    xx = p1.lat + param * C;
+    yy = p1.lng + param * D;
+  }
+
+  return calculateDistance(p.lat, p.lng, xx, yy);
 }
 
 export default App;
