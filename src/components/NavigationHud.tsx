@@ -1,3 +1,8 @@
+/**
+ * @file NavigationHud.tsx
+ * @description Renders the turn-by-turn cycling navigation head-up display featuring real-time GPS tracking, voice guidance synthesis, speed tracking, and simulation mode.
+ */
+
 import { useState, useEffect } from 'react';
 import { BikeRoute, LatLng, TurnInstruction } from '../types/route';
 import { Navigation, Volume2, VolumeX, Shield, Play, Pause, ArrowUp, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -8,6 +13,10 @@ interface NavigationHudProps {
   onUpdateUserLocation: (loc: LatLng | null) => void;
 }
 
+/**
+ * NavigationHud component providing a phone GPS navigation interface optimized for handlebar mounts,
+ * featuring speech synthesis voice cues, screen wake lock maintenance, live speed tracking, and route simulation.
+ */
 export const NavigationHud: React.FC<NavigationHudProps> = ({
   route,
   onExit,

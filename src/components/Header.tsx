@@ -1,3 +1,8 @@
+/**
+ * @file Header.tsx
+ * @description Renders the application header bar with mode toggling (Plan vs. Ride navigation), route actions (clear, reverse, import/export GPX), and status indicators.
+ */
+
 import React, { useRef } from 'react';
 import { Bike, Navigation, Upload, Download, PlusCircle, Trash2, RotateCcw } from 'lucide-react';
 import { BikeRoute } from '../types/route';
@@ -12,6 +17,10 @@ interface HeaderProps {
   onReverseRoute: () => void;
 }
 
+/**
+ * Header component providing top-level navigation, mode switching between planning and live GPS riding,
+ * and file import/export capabilities for GPX files.
+ */
 export const Header: React.FC<HeaderProps> = ({
   route,
   mode,

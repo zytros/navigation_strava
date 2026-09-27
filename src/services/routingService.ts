@@ -1,8 +1,58 @@
+/**
+ * @file routingService.ts
+ * @description Provides routing services connecting to the OSRM Cycling API for path calculation and the Open-Elevation API for terrain elevation data enrichment.
+ */
+
 import { Waypoint, BikeRoute, TurnInstruction, LatLng } from '../types/route';
 
 /**
- * Calculates a road-bike route between a list of waypoints using OSRM Cycling API.
- * Falls back to smooth interpolation if offline or rate-limited.
+ * Fetches real terrain elevation data (in meters) for an array of coordinates
+ * using Open-Elevation API POST endpoint (which fully supports CORS and batch requests).
+ */
+async function fetchElevations(coords: LatLng[]): Promise<number[]> {
+  if (coords.length === 0) return [];
+
+  const batchSize = 100; // Open-Elevation supports robust batching via POST
+  const elevations: number[] = new Array(coords.length).fill(400);
+
+  for (let i = 0; i < coords.length; i += batchSize) {
+    const chunk = coords.slice(i, i + batchSize);
+    const locations = chunk.map(c => ({ latitude: c.lat, longitude: c.lng }));
+
+    try {
+      const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ locations }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results && Array.isArray(data.results)) {
+          data.results.forEach((item: { elevation: number }, idx: number) => {
+            if (item && typeof item.elevation === 'number') {
+              elevations[i + idx] = Math.round(item.elevation);
+            }
+          });
+        }
+      } else {
+        console.warn(`Open-Elevation API error status: ${res.status}`);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch elevation chunk from Open-Elevation API:', err);
+    }
+  }
+
+  return elevations;
+}
+
+/**
+ * Calculates a road-bike route between a list of waypoints using the OSRM Cycling API,
+ * enriches trackpoints with real terrain elevation data from Open-Elevation API,
+ * calculates elevation gain/loss, total distance, estimated duration, and turn instructions.
  */
 export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road Bike Ride'): Promise<BikeRoute> {
   if (waypoints.length === 0) {
@@ -11,11 +61,12 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
 
   if (waypoints.length === 1) {
     const pt = waypoints[0].latLng;
+    const [ele] = await fetchElevations([pt]);
     return {
       id: Math.random().toString(36).substring(2, 9),
       title,
       waypoints,
-      trackPoints: [pt],
+      trackPoints: [{ ...pt, ele: ele || 400 }],
       instructions: [{ text: 'Start at ' + waypoints[0].name, distance: 0, type: 'arrive', latLng: pt }],
       distance: 0,
       elevationGain: 0,
@@ -43,16 +94,18 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
     const routeData = data.routes[0];
     const coordinates: [number, number][] = routeData.geometry.coordinates; // [lng, lat]
     
-    const trackPoints: LatLng[] = coordinates.map((coord, idx) => {
-      // Simulate realistic road bike elevation profile if not provided
-      const progress = idx / coordinates.length;
-      const baseEle = 120 + Math.sin(progress * Math.PI * 4) * 45 + Math.cos(progress * Math.PI * 8) * 15;
-      return {
-        lat: coord[1],
-        lng: coord[0],
-        ele: Math.round(baseEle),
-      };
-    });
+    const rawCoords: LatLng[] = coordinates.map(coord => ({
+      lat: coord[1],
+      lng: coord[0],
+    }));
+
+    // Fetch real terrain elevations along the OSRM route via Open-Elevation POST API
+    const elevations = await fetchElevations(rawCoords);
+
+    const trackPoints: LatLng[] = rawCoords.map((pt, idx) => ({
+      ...pt,
+      ele: elevations[idx] !== undefined ? elevations[idx] : 400,
+    }));
 
     // Parse OSRM steps into turn instructions
     const instructions: TurnInstruction[] = [];
@@ -123,7 +176,7 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
     };
 
   } catch (err) {
-    console.warn('Routing API failed, using straight-line interpolation fallback:', err);
+    console.warn('Routing API failed, using fallback route generator:', err);
     return createFallbackRoute(waypoints, title);
   }
 }
@@ -160,7 +213,7 @@ function createEmptyRoute(title: string): BikeRoute {
   };
 }
 
-function createFallbackRoute(waypoints: Waypoint[], title: string): BikeRoute {
+async function createFallbackRoute(waypoints: Waypoint[], title: string): Promise<BikeRoute> {
   const trackPoints: LatLng[] = [];
   let totalDist = 0;
 
@@ -176,11 +229,24 @@ function createFallbackRoute(waypoints: Waypoint[], title: string): BikeRoute {
         trackPoints.push({
           lat: p1.lat + (p2.lat - p1.lat) * f,
           lng: p1.lng + (p2.lng - p1.lng) * f,
-          ele: 100 + Math.sin(f * Math.PI) * 30,
         });
       }
       totalDist += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
     }
+  }
+
+  const elevations = await fetchElevations(trackPoints);
+  const finalTrackPoints = trackPoints.map((pt, idx) => ({
+    ...pt,
+    ele: elevations[idx] !== undefined ? elevations[idx] : 400,
+  }));
+
+  let eleGain = 0;
+  let eleLoss = 0;
+  for (let i = 1; i < finalTrackPoints.length; i++) {
+    const diff = (finalTrackPoints[i].ele || 0) - (finalTrackPoints[i - 1].ele || 0);
+    if (diff > 0) eleGain += diff;
+    else eleLoss += Math.abs(diff);
   }
 
   const instructions: TurnInstruction[] = waypoints.map((wpt, idx) => ({
@@ -194,11 +260,11 @@ function createFallbackRoute(waypoints: Waypoint[], title: string): BikeRoute {
     id: Math.random().toString(36).substring(2, 9),
     title,
     waypoints,
-    trackPoints,
+    trackPoints: finalTrackPoints,
     instructions,
     distance: totalDist,
-    elevationGain: Math.round(waypoints.length * 25),
-    elevationLoss: Math.round(waypoints.length * 20),
+    elevationGain: Math.round(eleGain),
+    elevationLoss: Math.round(eleLoss),
     estimatedDuration: Math.round(totalDist / (26 * 1000 / 3600)),
     createdAt: Date.now(),
   };

@@ -1,3 +1,8 @@
+/**
+ * @file ElevationProfile.tsx
+ * @description Renders an SVG elevation profile chart showing terrain profile, elevation gain/loss stats, and interactive cursor synchronization with the map.
+ */
+
 import React, { useState } from 'react';
 import { LatLng } from '../types/route';
 
@@ -7,6 +12,10 @@ interface ElevationProfileProps {
   onHoverPoint?: (point: LatLng | null) => void;
 }
 
+/**
+ * ElevationProfile component rendering an interactive SVG elevation chart with mouse hover tracking
+ * that syncs cursor position with the corresponding geographic point on the map.
+ */
 export const ElevationProfile: React.FC<ElevationProfileProps> = ({
   trackPoints,
   distance,

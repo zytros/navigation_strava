@@ -1,3 +1,8 @@
+/**
+ * @file route.ts
+ * @description Defines TypeScript interfaces and data types for bike routes, waypoints, turn-by-turn instructions, and geographic coordinates.
+ */
+
 export interface LatLng {
   lat: number;
   lng: number;

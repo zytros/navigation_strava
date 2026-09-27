@@ -1,3 +1,8 @@
+/**
+ * @file RouteEditor.tsx
+ * @description Renders the sidebar route planning panel for managing waypoints, editing route titles, reordering stops, and viewing route distance and elevation stats.
+ */
+
 import React from 'react';
 import { BikeRoute } from '../types/route';
 import { Trash2, MapPin, Navigation as NavIcon, ChevronRight, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
@@ -11,6 +16,10 @@ interface RouteEditorProps {
   isCalculating: boolean;
 }
 
+/**
+ * RouteEditor component providing an interactive sidebar panel for managing route waypoints,
+ * renaming stops, reordering waypoint sequence, and inspecting turn-by-turn routing instructions.
+ */
 export const RouteEditor: React.FC<RouteEditorProps> = ({
   route,
   onTitleChange,

@@ -1,3 +1,8 @@
+/**
+ * @file App.tsx
+ * @description Central root React component coordinating application state, view modes (Plan vs. Ride), waypoint modifications, and routing calculations.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { BikeRoute, LatLng, Waypoint } from './types/route';
 import { calculateBikeRoute } from './services/routingService';
@@ -13,6 +18,10 @@ const INITIAL_WAYPOINTS: Waypoint[] = [
   { id: 'w3', latLng: { lat: 47.3200, lng: 8.5600 }, name: 'Uetliberg Foothills' },
 ];
 
+/**
+ * App root component coordinating global route state, UI mode switching between route planning
+ * and GPS ride navigation, and interactions between map, editor sidebar, and elevation profile.
+ */
 export function App() {
   const [route, setRoute] = useState<BikeRoute>({
     id: 'default-route',

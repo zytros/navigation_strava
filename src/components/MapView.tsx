@@ -1,3 +1,8 @@
+/**
+ * @file MapView.tsx
+ * @description Renders the Leaflet interactive map displaying the route polyline, waypoint markers, elevation hover point, and live user GPS location.
+ */
+
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { BikeRoute, LatLng } from '../types/route';
@@ -11,6 +16,10 @@ interface MapViewProps {
   userLocation?: LatLng | null;
 }
 
+/**
+ * MapView component wrapping Leaflet map initialization, polyline rendering for route paths,
+ * draggable waypoint markers, live user GPS marker tracking, and elevation cursor hover highlights.
+ */
 export const MapView: React.FC<MapViewProps> = ({
   route,
   onMapClick,

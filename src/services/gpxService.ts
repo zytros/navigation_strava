@@ -1,7 +1,14 @@
+/**
+ * @file gpxService.ts
+ * @description Provides services for parsing GPX XML strings into BikeRoute objects and serializing BikeRoute objects into GPX XML files.
+ */
+
 import { LatLng, Waypoint, BikeRoute, TurnInstruction } from '../types/route';
 
 /**
- * Parses an XML GPX string into a BikeRoute object.
+ * Parses an XML GPX string into a structured BikeRoute object.
+ * Extracts track points (<trkpt>), route points (<rtept>), waypoints (<wpt>),
+ * calculates cumulative distance, elevation gain/loss, and generates turn instructions.
  */
 export function parseGpxFile(gpxText: string, fileName: string): BikeRoute {
   const parser = new DOMParser();
