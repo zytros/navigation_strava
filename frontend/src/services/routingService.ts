@@ -79,7 +79,8 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
   try {
     // Construct OSRM request coordinates: {lng},{lat};{lng},{lat}
     const coordsStr = waypoints.map(w => `${w.latLng.lng},${w.latLng.lat}`).join(';');
-    const url = `https://router.project-osrm.org/route/v1/bike/${coordsStr}?overview=full&geometries=geojson&steps=true`;
+    const osrmBaseUrl = (import.meta as any).env?.VITE_OSRM_URL || 'https://router.project-osrm.org';
+    const url = `${osrmBaseUrl}/route/v1/bike/${coordsStr}?overview=full&geometries=geojson&steps=true`;
 
     const response = await fetch(url);
     if (!response.ok) {
