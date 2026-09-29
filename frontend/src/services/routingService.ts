@@ -4,6 +4,7 @@
  */
 
 import { Waypoint, BikeRoute, TurnInstruction, LatLng } from '../types/route';
+import { processElevationData } from './elevationUtils';
 
 /**
  * Fetches terrain elevation data (in meters) for an array of coordinates
@@ -110,12 +111,15 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
     }));
 
     // Fetch real terrain elevations along the OSRM route via Open-Elevation POST API
-    const elevations = await fetchElevations(rawCoords);
+    const rawElevations = await fetchElevations(rawCoords);
 
-    const trackPoints: LatLng[] = rawCoords.map((pt, idx) => ({
+    const initialTrackPoints: LatLng[] = rawCoords.map((pt, idx) => ({
       ...pt,
-      ele: elevations[idx] !== undefined ? elevations[idx] : 400,
+      ele: rawElevations[idx] !== undefined ? rawElevations[idx] : 400,
     }));
+
+    // Smooth elevations and compute accurate gain/loss using processElevationData
+    const { points: trackPoints, elevationGain: eleGain, elevationLoss: eleLoss } = processElevationData(initialTrackPoints);
 
     // Parse OSRM steps into turn instructions
     const instructions: TurnInstruction[] = [];
@@ -162,14 +166,6 @@ export async function calculateBikeRoute(waypoints: Waypoint[], title = 'My Road
     if (instructions.length === 0) {
       instructions.push({ text: 'Start ride', distance: 0, type: 'straight', latLng: trackPoints[0] });
       instructions.push({ text: 'Finish ride', distance: Math.round(routeData.distance), type: 'arrive', latLng: trackPoints[trackPoints.length - 1] });
-    }
-
-    let eleGain = 0;
-    let eleLoss = 0;
-    for (let i = 1; i < trackPoints.length; i++) {
-      const diff = (trackPoints[i].ele || 0) - (trackPoints[i - 1].ele || 0);
-      if (diff > 0) eleGain += diff;
-      else eleLoss += Math.abs(diff);
     }
 
     return {
@@ -245,19 +241,13 @@ async function createFallbackRoute(waypoints: Waypoint[], title: string): Promis
     }
   }
 
-  const elevations = await fetchElevations(trackPoints);
-  const finalTrackPoints = trackPoints.map((pt, idx) => ({
+  const rawElevations = await fetchElevations(trackPoints);
+  const initialTrackPoints = trackPoints.map((pt, idx) => ({
     ...pt,
-    ele: elevations[idx] !== undefined ? elevations[idx] : 400,
+    ele: rawElevations[idx] !== undefined ? rawElevations[idx] : 400,
   }));
 
-  let eleGain = 0;
-  let eleLoss = 0;
-  for (let i = 1; i < finalTrackPoints.length; i++) {
-    const diff = (finalTrackPoints[i].ele || 0) - (finalTrackPoints[i - 1].ele || 0);
-    if (diff > 0) eleGain += diff;
-    else eleLoss += Math.abs(diff);
-  }
+  const { points: finalTrackPoints, elevationGain: eleGain, elevationLoss: eleLoss } = processElevationData(initialTrackPoints);
 
   const instructions: TurnInstruction[] = waypoints.map((wpt, idx) => ({
     text: idx === 0 ? `Start at ${wpt.name}` : idx === waypoints.length - 1 ? `Arrive at ${wpt.name}` : `Pass through ${wpt.name}`,

@@ -4,6 +4,7 @@
  */
 
 import { LatLng, Waypoint, BikeRoute, TurnInstruction } from '../types/route';
+import { processElevationData } from './elevationUtils';
 
 /**
  * Parses an XML GPX string into a structured BikeRoute object.
@@ -87,21 +88,15 @@ export function parseGpxFile(gpxText: string, fileName: string): BikeRoute {
     });
   }
 
-  // Calculate stats
+  // Smooth elevations and compute gain/loss using processElevationData
+  const { points: smoothedTrackPoints, elevationGain: eleGain, elevationLoss: eleLoss } = processElevationData(trackPoints);
+
+  // Calculate total distance
   let totalDist = 0;
-  let eleGain = 0;
-  let eleLoss = 0;
-
-  for (let i = 1; i < trackPoints.length; i++) {
-    const p1 = trackPoints[i - 1];
-    const p2 = trackPoints[i];
+  for (let i = 1; i < smoothedTrackPoints.length; i++) {
+    const p1 = smoothedTrackPoints[i - 1];
+    const p2 = smoothedTrackPoints[i];
     totalDist += calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
-
-    if (p1.ele !== undefined && p2.ele !== undefined) {
-      const diff = p2.ele - p1.ele;
-      if (diff > 0) eleGain += diff;
-      else eleLoss += Math.abs(diff);
-    }
   }
 
   // Generate basic turn instructions if none exist

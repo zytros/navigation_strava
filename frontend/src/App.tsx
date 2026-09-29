@@ -13,9 +13,10 @@ import { ElevationProfile } from './components/ElevationProfile';
 import { NavigationHud } from './components/NavigationHud';
 
 const INITIAL_WAYPOINTS: Waypoint[] = [
-  { id: 'w1', latLng: { lat: 47.3769, lng: 8.5417 }, name: 'Zurich Central' },
-  { id: 'w2', latLng: { lat: 47.3500, lng: 8.6000 }, name: 'Lake Greifensee' },
-  { id: 'w3', latLng: { lat: 47.3200, lng: 8.5600 }, name: 'Uetliberg Foothills' },
+  { id: 'w1', latLng: { lat: 46.8961, lng: 8.2464 }, name: 'Start' },
+  { id: 'w2', latLng: { lat: 46.7497, lng: 8.1333 }, name: 'Brünig Pass' },
+  { id: 'w3', latLng: { lat: 46.5606, lng: 8.3378 }, name: 'Grimsel Pass' },
+  { id: 'w4', latLng: { lat: 46.2942, lng: 7.8833 }, name: 'Finish' },
 ];
 
 /**
@@ -25,7 +26,7 @@ const INITIAL_WAYPOINTS: Waypoint[] = [
 export function App() {
   const [route, setRoute] = useState<BikeRoute>({
     id: 'default-route',
-    title: 'Zurich Alpine Road Loop',
+    title: 'Sarnen to Visp via Brünig & Grimsel',
     waypoints: INITIAL_WAYPOINTS,
     trackPoints: [],
     instructions: [],
@@ -56,7 +57,7 @@ export function App() {
 
   // Initial load calculation
   useEffect(() => {
-    updateRouteWithWaypoints(INITIAL_WAYPOINTS, 'Zurich Alpine Road Loop');
+    updateRouteWithWaypoints(INITIAL_WAYPOINTS, 'Sarnen to Visp via Brünig & Grimsel');
   }, [updateRouteWithWaypoints]);
 
   const handleMapClick = async (latLng: LatLng) => {
