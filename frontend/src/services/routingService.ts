@@ -6,21 +6,24 @@
 import { Waypoint, BikeRoute, TurnInstruction, LatLng } from '../types/route';
 
 /**
- * Fetches real terrain elevation data (in meters) for an array of coordinates
- * using Open-Elevation API POST endpoint (which fully supports CORS and batch requests).
+ * Fetches terrain elevation data (in meters) for an array of coordinates
+ * using the Self-Hosted Open-Elevation backend, falling back to 350m if unavailable.
  */
 async function fetchElevations(coords: LatLng[]): Promise<number[]> {
   if (coords.length === 0) return [];
 
-  const batchSize = 100; // Open-Elevation supports robust batching via POST
-  const elevations: number[] = new Array(coords.length).fill(400);
+  const batchSize = 100; // Batch size
+  const elevations: number[] = new Array(coords.length).fill(350);
 
   for (let i = 0; i < coords.length; i += batchSize) {
     const chunk = coords.slice(i, i + batchSize);
-    const locations = chunk.map(c => ({ latitude: c.lat, longitude: c.lng }));
+    let success = false;
 
+    // Try Self-Hosted Open-Elevation backend (e.g. http://localhost:8080/api/v1/lookup or VITE_ELEVATION_URL)
+    const elevationBaseUrl = (import.meta as any).env?.VITE_ELEVATION_URL || 'http://localhost:8080/api/v1/lookup';
     try {
-      const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+      const locations = chunk.map(c => ({ latitude: c.lat, longitude: c.lng }));
+      const res = await fetch(elevationBaseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,12 +40,18 @@ async function fetchElevations(coords: LatLng[]): Promise<number[]> {
               elevations[i + idx] = Math.round(item.elevation);
             }
           });
+          success = true;
         }
-      } else {
-        console.warn(`Open-Elevation API error status: ${res.status}`);
       }
     } catch (err) {
-      console.warn('Failed to fetch elevation chunk from Open-Elevation API:', err);
+      // Self-hosted server is offline or unreachable; fallback to 350m below
+    }
+
+    // If self-hosted backend failed or is offline, fallback to 350m default
+    if (!success) {
+      chunk.forEach((_, idx) => {
+        elevations[i + idx] = 350;
+      });
     }
   }
 

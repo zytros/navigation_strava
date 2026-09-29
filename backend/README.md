@@ -1,8 +1,10 @@
-# VeloRoute Self-Hosted OSRM Backend
+# VeloRoute Self-Hosted Backends (OSRM & Elevation Microservice)
 
-This directory contains the self-hosted OSRM (Open Source Routing Machine) backend configuration for VeloRoute using Docker.
+This directory contains the self-hosted routing (OSRM) and terrain elevation (Custom FastAPI Elevation) backend services for VeloRoute using Docker.
 
 ## Setup Instructions
+
+### 1. OSRM Routing Backend
 
 1. **Download OpenStreetMap Region Data (.pbf)**:
    Download the `.pbf` extract for your desired cycling region (e.g., Switzerland from [Geofabrik](https://download.geofabrik.de/)) and save it inside `backend/data/` as `map.pbf`.
@@ -20,15 +22,19 @@ This directory contains the self-hosted OSRM (Open Source Routing Machine) backe
    docker run --rm -t -v "${PWD}/data:/data" osrm/osrm-backend osrm-customize /data/map.osrm
    ```
 
-3. **Run the OSRM Routing Server**:
+3. **Run Services**:
+   Start both OSRM and Elevation containers:
    ```bash
-   docker-compose up -d
+   docker-compose up --build -d
    ```
 
-   The OSRM API will be available at `http://localhost:5000`.
+   - OSRM Routing API: `http://localhost:5000`
+   - Elevation API: `http://localhost:8080/api/v1/lookup`
 
-4. **Configure Frontend**:
-   In your frontend environment configuration (`frontend/.env`), point your routing service to your self-hosted backend:
-   ```env
-   VITE_OSRM_URL=http://localhost:5000
-   ```
+### 2. Configure Frontend
+
+In your frontend environment configuration (`frontend/.env`), point your routing and elevation services to your self-hosted backend:
+```env
+VITE_OSRM_URL=http://localhost:5000
+VITE_ELEVATION_URL=http://localhost:8080/api/v1/lookup
+```
