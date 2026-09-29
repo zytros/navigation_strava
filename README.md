@@ -1,5 +1,7 @@
 # VeloRoute 🚴‍♂️🗺️
 
+100% Vibe coded, careful
+
 VeloRoute is a modern, social-media-free web application built specifically for road cyclists. Its primary focus is planning, modifying, displaying, and navigating road bike routes, complete with GPX file manipulation, phone GPS turn-by-turn navigation, and support for a self-hosted OSRM routing backend.
 
 ---
