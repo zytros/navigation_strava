@@ -34,6 +34,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const waypointsLayerRef = useRef<L.LayerGroup | null>(null);
   const hoverMarkerRef = useRef<L.CircleMarker | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const hasCenteredInitialRouteRef = useRef(false);
 
   const onMapClickRef = useRef(onMapClick);
   useEffect(() => {
@@ -47,7 +48,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
-      }).setView([47.3769, 8.5417], 13);
+      }).setView([46.8, 8.2], 9);
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -71,6 +72,21 @@ export const MapView: React.FC<MapViewProps> = ({
       }
     };
   }, []);
+
+  // Fit bounds to route on initial load/reload when trackPoints become available
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (!hasCenteredInitialRouteRef.current && route.trackPoints.length > 0) {
+      const latLngs = route.trackPoints.map(p => [p.lat, p.lng] as [number, number]);
+      if (latLngs.length > 0) {
+        const bounds = L.latLngBounds(latLngs);
+        map.fitBounds(bounds, { padding: [50, 50] });
+        hasCenteredInitialRouteRef.current = true;
+      }
+    }
+  }, [route.trackPoints]);
 
   // Update Route Polyline & Waypoints Markers
   useEffect(() => {

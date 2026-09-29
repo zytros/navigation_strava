@@ -38,6 +38,7 @@ export function App() {
   });
 
   const [mode, setMode] = useState<'plan' | 'ride'>('plan');
+  const [clickMode, setClickMode] = useState<'insert' | 'append'>('insert');
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [hoverPoint, setHoverPoint] = useState<LatLng | null>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
@@ -69,7 +70,7 @@ export function App() {
 
     let newWaypoints: Waypoint[];
 
-    if (route.waypoints.length < 2) {
+    if (route.waypoints.length < 2 || clickMode === 'append') {
       newWaypoints = [...route.waypoints, newWaypoint];
     } else {
       let bestSegmentIdx = -1;
@@ -85,9 +86,7 @@ export function App() {
         }
       }
 
-      const THRESHOLD_METERS = 5000; // 5 km threshold for route proximity
-
-      if (bestSegmentIdx !== -1 && minDistance < THRESHOLD_METERS) {
+      if (bestSegmentIdx !== -1) {
         newWaypoints = [
           ...route.waypoints.slice(0, bestSegmentIdx + 1),
           newWaypoint,
@@ -211,6 +210,8 @@ export function App() {
               onRemoveWaypoint={handleRemoveWaypoint}
               onUpdateWaypointName={handleUpdateWaypointName}
               onReorderWaypoints={handleReorderWaypoints}
+              clickMode={clickMode}
+              onClickModeChange={setClickMode}
               isCalculating={isCalculating}
             />
           </>

@@ -13,6 +13,8 @@ interface RouteEditorProps {
   onRemoveWaypoint: (id: string) => void;
   onUpdateWaypointName: (id: string, name: string) => void;
   onReorderWaypoints: (startIndex: number, endIndex: number) => void;
+  clickMode: 'insert' | 'append';
+  onClickModeChange: (mode: 'insert' | 'append') => void;
   isCalculating: boolean;
 }
 
@@ -26,6 +28,8 @@ export const RouteEditor: React.FC<RouteEditorProps> = ({
   onRemoveWaypoint,
   onUpdateWaypointName,
   onReorderWaypoints,
+  clickMode,
+  onClickModeChange,
   isCalculating,
 }) => {
   return (
@@ -40,6 +44,37 @@ export const RouteEditor: React.FC<RouteEditorProps> = ({
           className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500 font-medium transition"
           placeholder="Enter road bike route name..."
         />
+      </div>
+
+      {/* Click Mode Toggle (Insert vs Append) */}
+      <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <span className="text-xs font-semibold text-slate-300">Map Click Action:</span>
+        <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => onClickModeChange('insert')}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+              clickMode === 'insert'
+                ? 'bg-brand-500 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Insert waypoint into closest route segment"
+          >
+            Insert
+          </button>
+          <button
+            type="button"
+            onClick={() => onClickModeChange('append')}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+              clickMode === 'append'
+                ? 'bg-brand-500 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Append waypoint to the end of the route"
+          >
+            Append
+          </button>
+        </div>
       </div>
 
       {/* Tabs / Sections */}
